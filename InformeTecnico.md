@@ -14,90 +14,55 @@ Aunque existe una validación del email, el sistema no detiene la ejecución cua
 
 2. En el método `main`, se ejecuta la siguiente instrucción:
 
+`contactController.submitContactForm("", "");`
 
-contactController.submitContactForm("", "");
-
-3. El sistema muestra en consola que el formulario ha sido procesado, aunque:
-
-    - El nombre está vacío.
-
-    - El email está vacío.
-
-
-Resultado observado:  
-El formulario se procesa sin errores aparentes.
-
-Resultado esperado:  
-El sistema debería detectar que los campos están vacíos y detener el procesamiento.
+3. El sistema muestra en consola que el formulario ha sido procesado, aunque el nombre y el email estan vacíos. COmo resultado el formulario se procesa sin errores aparentes, cuando en realidad el sistema debería detectar que los campos están vacíos y detener el procesamiento.
 
 ---
 
-## 3. Análisis técnico (qué ocurre internamente)
+## 3. Análisis técnico
 
 El flujo de ejecución es el siguiente:
 
-### 1️⃣ Desde `MainApp`
+### Desde `MainApp` el código:
 
-contactController.submitContactForm("", "");
+`contactController.submitContactForm("", "");`
 
-Se envían dos cadenas vacías como parámetros (`name` y `email`).
+Envía dos cadenas vacías como parámetros (`name` y `email`).
 
 ---
 
-### 2️⃣ En `ContactController`
+### En `ContactController`:
 
-public void submitContactForm(String name, String email) {  
+`public void submitContactForm(String name, String email) {  
 Logger.log("Recibiendo formulario de contacto...");  
 ContactForm form = new ContactForm(name, email);  
 service.processForm(form);  
 Logger.log("Fin de submitContactForm");  
-}
+}`
 
-- Se crea un objeto `ContactForm` con los valores recibidos.
-
-- No se realiza ninguna validación en el controlador.
-
-- Se delega directamente la lógica al `ContactService`.
-
+Crea un objeto `ContactForm` con los valores recibidos.
+Y no se realiza ninguna validación en el controlador, sino que se delega directamente la lógica al `ContactService`.
 
 ---
 
-### 3️⃣ En `ContactService`
+### En `ContactService` el código If:
 
-if (Validator.validateEmail(form.getEmail())) {  
+`if (Validator.validateEmail(form.getEmail())) {  
 Logger.log("Email es válido!");  
 }
-
 Logger.log("Procesando formulario para: " + form.getName());  
-Logger.log("Mensaje enviado a: " + form.getName().toUpperCase());
+Logger.log("Mensaje enviado a: " + form.getName().toUpperCase());`
 
-El método `validateEmail` únicamente comprueba si el email contiene `"@"`.
+El método `validateEmail` únicamente comprueba si el email contiene `"@"`. pero el email está vacío, por lo que `validateEmail("")` devuelve `false`. y el bloque `if` no se ejecuta, por lo que el resto del método continúa ejecutándose, y el formulario se procesa igualmente.
 
-Cuando el email está vacío:
+En el If no existe una condición que bloquee el flujo si la validación falla, ni retorno anticipado (`return`), ni lanzamiento de excepción.
 
-- `validateEmail("")` devuelve `false`.
-
-- El bloque `if` no se ejecuta.
-
-- Sin embargo, el método continúa ejecutándose.
-
-- El formulario se procesa igualmente.
-
-
-No existe:
-
-- Condición que bloquee el flujo si la validación falla.
-
-- Retorno anticipado (`return`).
-
-- Lanzamiento de excepción.
-
-- Validación del campo `name`.
-
+Además, tampoco existe una validación del campo `name`.
 
 ---
 
-### 🔎 Conclusión del análisis interno
+### Conclusión del análisis interno
 
 El sistema sí ejecuta la validación, pero no utiliza el resultado negativo para detener el procesamiento.
 
@@ -107,23 +72,18 @@ El problema no está en que la validación no funcione, sino en que su resultado
 
 ## 4. Causa raíz
 
-La causa raíz es un error en el control del flujo lógico.
+La causa raíz es un error en el control del flujo lógico generado en el If.
 
 Existe validación, pero no existe una acción cuando la validación falla.  
 El método `processForm` continúa su ejecución independientemente del resultado del `if`.
 
-En términos técnicos, la validación no está integrada correctamente en la lógica de negocio.
-
 ---
 
-## 5. Propuesta de solución (sin modificar aún)
+## 5. Propuesta de solución
 
 Se propone:
 
 - Implementar validación completa de los campos obligatorios (nombre y email).
-
 - Introducir control de flujo que detenga la ejecución si la validación falla.
-
 - Evitar que el procesamiento continúe cuando los datos sean inválidos.
-
 - Mantener la responsabilidad de validación centralizada (por ejemplo, en `Validator`).
