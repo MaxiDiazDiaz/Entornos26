@@ -14,7 +14,7 @@ public class MainApp {
 
         ContactController contactController = new ContactController();
 
-        contactController.submitContactForm("", "");
+        contactController.submitContactForm("Maxi", "maxi@maxi.es");
 
         System.out.println("=== BuggyWebApp terminado ===");
 		
